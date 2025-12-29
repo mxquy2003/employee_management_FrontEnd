@@ -52,19 +52,18 @@ import { ApiService } from '../../services/api.service';
       </tbody>
     </table>
   `
-})
+})  
 export class CertificateComponent implements OnInit {
   list: any[] = [];
-  
-  
   form = { name: '' };
-  
-
   isEdit = false;
   currentId: number | null = null;
   errorMessage = '';
 
-  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private api: ApiService, 
+    private cdr: ChangeDetectorRef 
+  ) {}
   
   ngOnInit() { this.load(); }
 
@@ -76,21 +75,20 @@ export class CertificateComponent implements OnInit {
   }
 
   save() {
-   
+    this.errorMessage = '';
+
     if (!this.form.name.trim()) {
       this.errorMessage = 'Vui lòng nhập tên chứng chỉ!';
       return;
     }
 
-    
     const observer = {
       next: () => {
         this.cancel();
         this.load(); 
       },
       error: (err: any) => {
-        this.errorMessage = 'Có lỗi xảy ra, vui lòng thử lại!';
-        console.error(err);
+        this.handleError(err);
       }
     };
 
@@ -101,7 +99,6 @@ export class CertificateComponent implements OnInit {
     }
   }
 
-  
   edit(c: any) {
     this.isEdit = true;
     this.currentId = c.id;
@@ -118,7 +115,27 @@ export class CertificateComponent implements OnInit {
 
   remove(id: number) { 
     if(confirm('Bạn có chắc muốn xóa chứng chỉ này?')) {
-      this.api.deleteCertificate(id).subscribe(() => this.load()); 
+      this.api.deleteCertificate(id).subscribe({
+        next: () => {
+          this.errorMessage = '';
+          this.load();
+        },
+        error: (err: any) => {
+          this.handleError(err);
+        }
+      });
     }
+  }
+
+  private handleError(err: any) {
+    console.error(err); 
+    if (err.error && typeof err.error === 'object') {
+      this.errorMessage = err.error.message || err.error.error || 'Đã có lỗi xảy ra';
+    } else if (typeof err.error === 'string') {
+      this.errorMessage = err.error;
+    } else {
+      this.errorMessage = 'Lỗi không xác định (' + err.status + ')';
+    }
+    this.cdr.detectChanges();
   }
 }

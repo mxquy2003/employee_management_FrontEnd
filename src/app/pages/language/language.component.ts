@@ -61,16 +61,15 @@ import { ApiService } from '../../services/api.service';
 })
 export class LanguageComponent implements OnInit {
   list: any[] = [];
-  
- 
   form = { name: '', level: '' };
-  
-  
   isEdit = false;
   currentId: number | null = null;
   errorMessage = '';
 
-  constructor(private api: ApiService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private api: ApiService, 
+    private cdr: ChangeDetectorRef
+  ) {}
   
   ngOnInit() { this.load(); }
 
@@ -81,35 +80,32 @@ export class LanguageComponent implements OnInit {
     }); 
   }
 
- 
   save() {
-    
+    this.errorMessage = '';
+
     if (!this.form.name.trim() || !this.form.level.trim()) {
       this.errorMessage = 'Vui lòng nhập đầy đủ Tên và Trình độ!';
       return;
     }
 
-   
     const observer = {
       next: () => {
         this.cancel();
         this.load();   
       },
       error: (err: any) => {
-        this.errorMessage = 'Có lỗi xảy ra, vui lòng thử lại!';
-        console.error(err);
+        console.log('Error details:', err); 
+        this.handleError(err);
       }
     };
 
     if (this.isEdit && this.currentId) {
       this.api.updateLanguage(this.currentId, this.form).subscribe(observer);
     } else {
-      
       this.api.createLanguage(this.form).subscribe(observer);
     }
   }
 
-  
   edit(l: any) {
     this.isEdit = true;
     this.currentId = l.id;
@@ -117,7 +113,6 @@ export class LanguageComponent implements OnInit {
     this.errorMessage = ''; 
   }
 
-  
   cancel() {
     this.isEdit = false;
     this.currentId = null;
@@ -127,7 +122,27 @@ export class LanguageComponent implements OnInit {
 
   remove(id: number) { 
     if(confirm('Bạn có chắc muốn xóa?')) {
-      this.api.deleteLanguage(id).subscribe(() => this.load()); 
+      this.api.deleteLanguage(id).subscribe({
+        next: () => {
+          this.errorMessage = '';
+          this.load();
+        },
+        error: (err: any) => {
+          this.handleError(err);
+        }
+      });
     }
+  }
+
+  private handleError(err: any) {
+    if (err.error && typeof err.error === 'object') {
+      this.errorMessage = err.error.message || err.error.error || 'Đã có lỗi xảy ra';
+    } else if (typeof err.error === 'string') {
+      this.errorMessage = err.error;
+    } else {
+      this.errorMessage = 'Lỗi không xác định (' + err.status + ')';
+    }
+    
+    this.cdr.detectChanges();
   }
 }
